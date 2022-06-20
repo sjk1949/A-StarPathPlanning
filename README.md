@@ -1,5 +1,6 @@
 # A-StarPathPlanning
 An A* Path Planning Algorithm of javascript version.
+
 寄科导网页作业，因为要求所以所有内容都放在同一个html文件里了。
 早就想实现一下A* 寻路算法，一直没有合适的时机，这次正好以寄科导作业为载体实现了一下html5版本的算法。
 为了把它包装的更有艺术感觉（更加作死），用CSS抠了个垂直导航栏，基础算法的实现用了我半天的时间，debug却花了整整一天一夜。现在我在怀疑把一个算法包装得这么"漂亮"是否值得。
