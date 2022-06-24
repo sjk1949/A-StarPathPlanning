@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <title>A*算法实现</title>
+        <style>
+            /*此处CSS设计参考https://www.runoob.com/css/css-tutorial.html */
+            ul{
+                list-style-type: none;
+                margin: 0;
+                padding: 0;
+                width: 150px;
+                background-color: #f1f1f1;
+                height: 100%;
+                position: fixed;
+                overflow: visible;
+            }
+            li p{
+                width: 80%;
+                padding: 8px 10%;
+            }
+            li span{
+                display: block;
+                color: #000;
+                width: 80%;
+                padding: 8px 10%;
+                text-decoration: none;
+            }
+            li span:hover {
+                background-color: #555;
+                color: #FFF;
+            }
+            li span:active {
+                background-color: #24B;
+            }
+            .dropdown{
+                position: relative;
+            }
+            .dropdown-content{
+                display: none;
+                position: absolute;
+                background-color: #f9f9f9;
+                min-width: 150px;
+                box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+                padding: 0;
+                left: 150px;
+                top: 0px;
+            }
+            .dropdown:hover .dropdown-content{
+                display: block;
+            }
+            .dropdown-content span:hover {
+                background-color: #555;
+                color:#FFF;
+            }
+            .dropdown-content span:active {
+                background-color: #24B;
+            }
+        </style>
+    </head>
+    <body>
+        <div>
+            <ul>
+                <li><p>A*寻路</p></li>
+                <hr>
+                <li><span id="beginText" onclick="clickBegin()">开始</span></li>
+                <li>
+                    <div class="dropdown">
+                        <span>切换模式</span>
+                        <div class="dropdown-content">
+                            <span onclick="MouseMode='remove'">清除</span>
+                            <span onclick="MouseMode='setStartPoint'">起点</span>
+                            <span onclick="MouseMode='setDestination'">终点</span>
+                            <span onclick="MouseMode='wall'">墙</span>
+                            <span onclick="MouseMode='road'">路</span>
+                        </div>
+                    </div>
+                </li>
+                <li>
+                    <div class="dropdown">
+                        <span>显示模式</span>
+                        <div class="dropdown-content">
+                            <span id="dataText" onclick="setRenderStyle('data')">数据:开</span>
+                            <span id="arrowsText" onclick="setRenderStyle('arrows')">箭头:开</span>
+                            <span id="renderText" onclick="setRenderStyle('render')">搜索区域:开</span>
+                        </div>
+                    </div>
+                </li>
+                <li><span>说明</span></li>
+            </ul>
+        </div>
+        <div style="margin-left: 10%;padding: 1px 16px;height: 1000px;">
+            <canvas id="Canvas">您的浏览器不支持html5的canvas标签，请更换浏览器查看。:(</canvas>
+        </div>
+
+        <script>
+            //自定义参数
+            var size = 30;//单个网格的大小(px)
+            var imgSize = 80;//图片大小(px)
+            var [blockX,blockY] = [20,20];//行列节点数
+            var speed = 60;//播放速度
+            var RenderStyle = {data:1,arrows:1,render:1};//可选项:'data','arrows'
+
+            //程序预设参数
+            var PROJECTSTATES = 'start';//可能状态:'start','containue','pause','success'
+            let blockArr = [];//blockArr[i][j]为ij网格实例
+            let openList = [];//正在经过的节点
+            let newOpenList = [];//在循环中更新的openList
+            let closeList = [];//已经过的节点
+            let MouseMode = 'default';//鼠标模式
+            let startTime = new Date().getTime();//调试用时间
+            let endTime = new Date().getTime();
+            let StartNode = null;//起点
+            let DestinationNode = null;//终点
+            let Alignment = [];//路径
+            let EasterEggCounter = 0;
+
+            let beginText = document.getElementById("beginText");
+            let dataText = document.getElementById("dataText");
+            let arrowsText = document.getElementById("arrowsText");
+            let renderText = document.getElementById("renderText");
+            const cnv = document.getElementById("Canvas");
+            const ctx = cnv.getContext("2d");
+
+            cnv.width = blockX*size;
+            cnv.height = blockY*size;
+
+            //这段代码部分参考https://blog.csdn.net/weixin_41192489/article/details/124388436 以提高兼容性
+            window.tools = {};
+            window.tools.getMouse = function(element){
+                var mouse={x:0,y:0};
+                addEventListener('mousemove',(e)=>{
+                    var x,y;
+                    var e = e||window.event;
+                    if(e.pageX||e.pageY){
+                        x = e.pageX;
+                        y = e.pageY;
+                    }else{
+                        x = e.clientX + document.body.scrollLeft || document.documentElement.scrollLeft;
+                        y = e.clientY + document.body.scrollTop || document.documentElement.scrollTop;
+                    }
+                    x -= element.offsetLeft;
+                    y -= element.offsetTop;
+                    mouse.x = x;
+                    mouse.y = y;
+                })
+                return mouse;
+            }
+            window.tools.getKey = function(){
+                var key = {};
+                window.addEventListener('keydown',(e)=>{
+                    if(e.keyCode == 38 || e.keyCode == 87){
+                        key.direction = "up";
+                    }else if(e.keyCode == 39 || e.keyCode == 68){
+                        key.direction = "right";
+                    }else if(e.keyCode == 40 || e.keyCode == 83){
+                        key.direction = "down";
+                    }else if(e.keyCode == 37 || e.keyCode == 65){
+                        key.direction = "left";
+                    }else{
+                        key.direction = "";
+                    }
+                }, false);
+                return key;
+            }
+
+            function clickBegin(){//点击开始按钮
+                if(DestinationNode){
+                    if(PROJECTSTATES=='start'||PROJECTSTATES=='pause'){
+                        PROJECTSTATES = 'containue';
+                        beginText.innerHTML = "暂停";
+                    }else if(PROJECTSTATES=='containue'){
+                        PROJECTSTATES = 'pause';
+                        beginText.innerHTML = "继续";
+                    }else if(PROJECTSTATES=='success'){
+                        for(let i=0;i<blockX;i++){
+                            for(let j=0;j<blockY;j++){
+                                blockArr[i][j].clear();
+                            }
+                        }
+                        openList = [];
+                        closeList = [];
+                        Alignment = [];
+                        PROJECTSTATES = 'start';
+                        beginText.innerHTML = "开始";
+                    }
+                }else{
+                    alert('没有设置终点！');
+                }
+            }
+
+            function setRenderStyle(style){
+                if(style=='data'){
+                    if(RenderStyle.data){
+                        RenderStyle.data=0;
+                        dataText.innerHTML='数据:关';
+                    }else{
+                        RenderStyle.data=1;
+                        dataText.innerHTML='数据:开';
+                    }
+                }else if(style=='arrows'){
+                    if(RenderStyle.arrows){
+                        RenderStyle.arrows=0;
+                        arrowsText.innerHTML='箭头:关';
+                    }else{
+                        RenderStyle.arrows=1;
+                        arrowsText.innerHTML='箭头:开';
+                    }
+                }else if(style=='render'){
+                    if(RenderStyle.render){
+                        RenderStyle.render=0;
+                        renderText.innerHTML='搜索区域:关';
+                    }else{
+                        RenderStyle.render=1;
+                        renderText.innerHTML='搜索区域:开';
+                    }
+                }
+            }
+            
+            function print(text){
+                console.log(text);
+            }
+
+            class Screen{
+                constructor(){
+                    this.imgURL={
+                        'sovhtnk_Left':'./image/sovhtnk_Left.png',
+                        'sovhtnk_Leftup':'./image/sovhtnk_Leftup.png',
+                        'sovhtnk_Leftdown':'./image/sovhtnk_Leftdown.png',
+                        'sovhtnk_Right':'./image/sovhtnk_Right.png',
+                        'sovhtnk_Rightup':'./image/sovhtnk_Rightup.png',
+                        'sovhtnk_Rightdown':'./image/sovhtnk_Rightdown.png',
+                        'sovhtnk_Up':'./image/sovhtnk_Up.png',
+                        'sovhtnk_Down':'./image/sovhtnk_Down.png',
+                    }
+                    for(let key in this.imgURL){
+                        let src = this.imgURL[key];
+                        this.imgURL[key] = new Image();
+                        let value = this.imgURL[key];
+                        value.src = src;
+                        value.onload = () =>{
+                        }
+                    }
+                }
+
+                screenUpdate(){
+                    if(PROJECTSTATES == 'containue'){
+                        if(openList.length!=0){
+                            newOpenList = openList.slice();
+                            let minFnode = openList[0];
+                            let minF = minFnode.F;
+                            for(let i in openList){
+                                if(openList[i].F<minF){
+                                    minFnode = openList[i];
+                                    minF = openList[i].F;
+                                }
+                            }
+                            minFnode.searchSurroundings();
+                            openList = newOpenList;
+                        }else if(openList.length==0&&PROJECTSTATES=='containue'&&StartNode!=null){
+                            openList.push(StartNode);
+                        }
+                    }
+
+                    tank.update();
+
+                    if(PROJECTSTATES == 'success'){
+                        this.createAlignment();
+                        tank.alignment = Alignment.slice();
+                        PROJECTSTATES = 'start';
+                    }
+                    print('Update OK!')
+                }
+
+                screenRender(){
+                    if(RenderStyle.render){
+                        for(let i in openList){//渲染openList中节点
+                        ctx.fillStyle = '#405090';
+                        ctx.fillRect(openList[i].x*openList[i].size,openList[i].y*openList[i].size,openList[i].size,openList[i].size);
+                        }
+
+                        for(let i in closeList){//渲染closeList中节点
+                            ctx.fillStyle = '#404040';
+                            ctx.fillRect(closeList[i].x*closeList[i].size,closeList[i].y*closeList[i].size,closeList[i].size,closeList[i].size);
+                        }
+                    }
+                    
+                    for(let i=0;i<blockArr.length;i++){
+                        for(let j=0;j<blockArr[i].length;j++){
+                            blockArr[i][j].render();
+                        }
+                    }
+
+                    tank.render();
+
+                    if(PROJECTSTATES == 'success'){
+                        this.drawAlignment(Alignment);
+                    }                 
+                }
+
+                createAlignment(){//创建从起点到终点的路径并存储在Alignment中
+                    let thisNode = DestinationNode;
+                    while(thisNode != null){
+                        Alignment.push(thisNode);
+                        if(thisNode.state=='wall'&&EasterEggCounter==0){
+                            EasterEggCounter++;
+                            alert('达成成就：狗急跳墙\r\r你逼得算法翻墙了！(@w@)\r\r呃，很高兴看到我写的程序能够被人喜欢，这让我觉得自己的劳动是有价值的，have fun!');
+                        }
+                        thisNode = thisNode.parentNode;
+                    }
+                    Alignment.reverse();
+                }
+
+                drawAlignment(alignment){//画出从起点到终点的路径
+                    ctx.strokeStyle = '#FF0000';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    for(let i in alignment){
+                        let thisNode = alignment[i];
+                        ctx.lineTo((thisNode.x+0.5)*size,(thisNode.y+0.5)*size);                       
+                    }
+                    ctx.stroke();
+                }
+            }
+
+            class Block{
+
+                constructor(x,y){
+                    this.x = x;
+                    this.y = y;
+                    this.size = size;
+                    this.state = 'default';//该网格的状态
+                    this.parentNode = null;//该节点的父节点
+                    this.G = null;
+                    this.H = null;
+                    this.F = null;
+                }
+
+                cost(i,j){//从-i,-j方向跨越该地形代价
+                    let rate;
+                    let addCost;
+                    if(i*j == 0){
+                        rate = 10;
+                    }else{
+                        rate = 14;
+                    }
+                    switch(this.state){//不同地形代价不同
+                        case 'wall':{
+                            addCost = 100;
+                            break;
+                        }
+                        case 'road':{
+                            addCost = 0.5;
+                            break;
+                        }
+                        default:{
+                            addCost = 1;
+                            break;
+                        }
+                    }
+
+                    return rate*addCost;
+                }
+
+                ManhattanDist(node){//与node间距离(H)
+                    let rate = 10;
+                    let dx = Math.abs(node.x-this.x);
+                    let dy = Math.abs(node.y-this.y);
+                    return rate*(dx+dy);
+                }
+
+                searchSurroundings(){//搜索周围节点并加入openList
+                    newOpenList.splice(newOpenList.indexOf(this),1)
+                    closeList.push(this);
+                    var surroundings = [-1,0,1];
+                    for(let i in surroundings){
+                        i = surroundings[i];
+                        for(let j in surroundings){
+                            j = surroundings[j];
+                            if(i||j){//问题：判断链过长，不能分步扩散
+                                if((this.x+i in blockArr)&&(this.y+j in blockArr[this.x+i])){
+                                    let thisNode = blockArr[this.x+i][this.y+j];
+                                    if(thisNode.state == 'destination'){//找到终点
+                                        PROJECTSTATES = 'success';
+                                        beginText.innerHTML = "重置";                       
+                                    }
+
+                                    if(!closeList.includes(thisNode)){
+                                        if(!newOpenList.includes(thisNode)){                                         
+                                            thisNode.parentNode=this;
+                                            thisNode.G=thisNode.parentNode.G+thisNode.cost(i,j);
+                                            thisNode.H=thisNode.ManhattanDist(DestinationNode);
+                                            thisNode.F=thisNode.G+thisNode.H;
+                                            newOpenList.push(thisNode);
+                                            //print(thisNode);
+                                        }else{
+                                            thisNode.parentNode = (thisNode.G<this.G+thisNode.cost(i,j))?thisNode.parentNode:this;
+                                            thisNode.G=thisNode.parentNode.G+thisNode.cost(thisNode.parentNode.x-thisNode.x,thisNode.parentNode.y-thisNode.y);
+                                            thisNode.F=thisNode.G+thisNode.H;
+                                        }
+                                    }
+                                }                            
+                            }
+                        }
+                    }
+                    return newOpenList;
+                }
+
+                onMouseClick(){//鼠标点击该方块时操作
+                    switch(MouseMode){
+                        case 'remove':{
+                            if(this.state=='startPoint'){
+                                StartNode=null;
+                            }else if(this.state=='destination'){
+                                DestinationNode=null;
+                            }
+                            this.state = 'default';
+                            break;
+                        }
+                        case 'setStartPoint':{
+                            if(StartNode){
+                                StartNode.state='default';
+                            }
+                            if(this.state=='destination'){
+                                DestinationNode = null;
+                            }
+                            this.state = 'startPoint';  
+                            StartNode = this;
+                            break;
+                        }
+                        case 'setDestination':{
+                            if(DestinationNode){
+                                DestinationNode.state='default';
+                            }
+                            if(this.state=='startPoint'){
+                                StartNode = null;
+                            }
+                            this.state = 'destination';
+                            DestinationNode = this;
+                            break;
+                        }
+                        case 'wall':{
+                            this.state = 'wall';
+                            break;
+                        }
+                        case 'road':{
+                            this.state = 'road';
+                            break;
+                        }
+                        default:{
+                            break;
+                        }
+                    }                  
+                }
+
+                clear(){//重置时方块设置
+                    this.parentNode = null;
+                    this.G = null;
+                    this.H = null;
+                    this.F = null;
+                }
+
+                render(){
+                    switch(this.state){//根据不同的网格状态选择不同的样式
+                        case 'startPoint':{
+                            ctx.fillStyle = '#00FF00';
+                            ctx.fillRect(this.x*size,this.y*size,size,size);
+                            break;
+                        }
+                        case 'destination':{
+                            ctx.fillStyle = '#FF0000';
+                            ctx.fillRect(this.x*size,this.y*size,size,size);
+                            break;
+                        }
+                        case 'wall':{
+                            ctx.fillStyle = '#000088';
+                            ctx.fillRect(this.x*size,this.y*size,size,size);
+                            break;
+                        }
+                        case 'road':{
+                            ctx.fillStyle = '#DDCC00';
+                            ctx.fillRect(this.x*size,this.y*size,size,size);
+                            break;
+                        }
+                        default:{
+                            break;
+                        }
+                    }
+
+                    //绘制边框
+                    ctx.strokeStyle = '#000000';
+                    ctx.strokeRect(this.x*size,this.y*size,size,size);
+                    
+                    //绘制箭头
+                    if(RenderStyle.arrows&&(this.parentNode != null)){
+                        let rate = 0.2;
+                        let offSetX = rate*(this.x-this.parentNode.x);
+                        let offSetY = rate*(this.y-this.parentNode.y);
+                        ctx.beginPath();
+                        ctx.moveTo((this.x+0.5-offSetX)*size,(this.y+0.5-offSetY)*size);
+                        ctx.lineTo((this.x+0.5+offSetX)*size,(this.y+0.5+offSetY)*size);
+                        ctx.stroke();
+                    }
+
+                    //绘制数据
+                    if(RenderStyle.data&&(this.G != null)){
+                        let fontSize = Math.floor(size/3);
+                        ctx.font = fontSize+'px Arial';
+                        ctx.fillStyle = '#00FF00';
+                        ctx.fillText(this.G,this.x*size,this.y*size+fontSize);
+                        ctx.fillStyle = '#00FFFF';
+                        ctx.fillText(this.H,(this.x+0.5)*size,this.y*size+fontSize);
+                        ctx.fillStyle = '#FFFFFF';
+                        ctx.fillText(this.F,this.x*size,(this.y+0.5)*size+fontSize);
+                    }
+                }
+            }
+
+            class Player{
+
+                constructor(x,y){
+                    this.pos_x = x;
+                    this.pos_y = y;
+                    this.towards = 'left';
+                    this.speed = 2;
+                    this.image = screen.imgURL['sovhtnk_Right'];
+                    this.alignment = null;
+                }
+
+                update(){
+                    if(this.alignment != null&&this.alignment.length != 0){
+                        console.log(this.alignment);
+                        let Dx = (this.alignment[0].x+0.5)*size-this.pos_x;
+                        let Dy = (this.alignment[0].y+0.5)*size-this.pos_y;
+                        let dx = this.speed*Dx/Math.sqrt(Dx**2+Dy**2);
+                        let dy = this.speed*Dy/Math.sqrt(Dx**2+Dy**2);
+                        console.log(dx);
+                        if(dx<0){
+                            if(dy<0){
+                                this.image = screen.imgURL['sovhtnk_Leftup'];
+                            }
+                            if(dy==0){
+                                this.image = screen.imgURL['sovhtnk_Left'];
+                            }
+                            if(dy>0){
+                                this.image = screen.imgURL['sovhtnk_Leftdown'];
+                            }
+                        }else if(dx==0){
+                            if(dy<0){
+                                this.image = screen.imgURL['sovhtnk_Up'];
+                            }
+                            if(dy==0){}
+                            if(dy>0){
+                                this.image = screen.imgURL['sovhtnk_Down'];
+                            }
+                        }else if(dx>0){
+                            if(dy<0){
+                                this.image = screen.imgURL['sovhtnk_Rightup'];
+                            }
+                            if(dy==0){
+                                this.image = screen.imgURL['sovhtnk_Right'];
+                            }
+                            if(dy>0){
+                                this.image = screen.imgURL['sovhtnk_Rightdown'];
+                            }
+                        }
+
+                        if((dx**2+dy**2)<(Dx**2+Dy**2)){
+                            this.pos_x += dx;
+                            this.pos_y += dy;
+                        }else{
+                            this.pos_x = (this.alignment[0].x+0.5)*size;
+                            this.pos_y = (this.alignment[0].y+0.5)*size;
+                            this.alignment.splice(0,1);
+                        }
+                    }
+                }
+
+                render(){
+                    ctx.drawImage(this.image,this.pos_x-imgSize/2,this.pos_y-imgSize/2,imgSize,imgSize);
+                }
+            }
+
+            console.log('Sjkenterprise的计科导网页作业');
+
+            var mouse = tools.getMouse(cnv);
+            var key = tools.getKey();
+            cnv.addEventListener('mousedown',()=>{
+                let x = Math.floor(mouse.x/size);
+                let y = Math.floor(mouse.y/size);
+                if((x in blockArr)&&(y in blockArr[x])){
+                    blockArr[x][y].onMouseClick();
+                }
+            })
+            window.addEventListener('keydown',(e)=>{
+                switch(key.direction){
+                    case 'up':{
+                        tank.image = screen.imgURL['sovhtnk_Up'];
+                        tank.pos_y+=-tank.speed;
+                        break;
+                    }
+                    case 'down':{
+                        tank.image = screen.imgURL['sovhtnk_Down'];
+                        tank.pos_y+=tank.speed;
+                        break;
+                    }
+                    case 'left':{
+                        tank.image = screen.imgURL['sovhtnk_Left'];
+                        tank.pos_x+=-tank.speed;
+                        break;
+                    }
+                    case 'right':{
+                        tank.image = screen.imgURL['sovhtnk_Right'];
+                        tank.pos_x+=tank.speed;
+                        break;
+                    }
+                }
+            })
+
+            for(let i=0;i<blockX;i++){
+                blockArr[i] = [];
+                for(let j=0;j<blockY;j++){
+                    blockArr[i].push(new Block(i,j));
+                }
+            }
+
+            screen = new Screen();
+            tank = new Player(2,2);
+
+            setInterval(()=>{
+                startTime = new Date().getTime();
+                if(ctx != null){
+                    //清空
+                    ctx.clearRect(0,0,cnv.width,cnv.height);
+                    //更新
+                    //if(PROJECTSTATES=='containue'){
+                        screen.screenUpdate();
+                    //}
+                    //渲染
+                    screen.screenRender();
+                }
+                endTime = new Date().getTime(); 
+                //console.log('OK!',endTime - startTime);
+            },1000/speed);
+
+        </script>
+    </body>
+</html>
