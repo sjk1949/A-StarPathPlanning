@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html>
     <head>
+        <meta charset="UTF-8">
         <title>A*算法实现</title>
         <style>
             /*此处CSS设计参考https://www.runoob.com/css/css-tutorial.html */
@@ -30,7 +31,7 @@
                 color: #FFF;
             }
             li span:active {
-                background-color: #23B;
+                background-color: #24B;
             }
             .dropdown{
                 position: relative;
@@ -53,7 +54,7 @@
                 color:#FFF;
             }
             .dropdown-content span:active {
-                background-color: #23B;
+                background-color: #24B;
             }
         </style>
     </head>
@@ -81,6 +82,7 @@
                         <div class="dropdown-content">
                             <span id="dataText" onclick="setRenderStyle('data')">数据:开</span>
                             <span id="arrowsText" onclick="setRenderStyle('arrows')">箭头:开</span>
+                            <span id="renderText" onclick="setRenderStyle('render')">搜索区域:开</span>
                         </div>
                     </div>
                 </li>
@@ -94,9 +96,9 @@
         <script>
             //自定义参数
             var size = 30;//单个网格的大小(px)
-            var [blockX,blockY] = [30,30];//行列节点数
+            var [blockX,blockY] = [20,20];//行列节点数
             var speed = 60;//播放速度
-            var RenderStyle = {data:1,arrows:1};//可选项:'data','arrows'
+            var RenderStyle = {data:1,arrows:1,render:1};//可选项:'data','arrows'
 
             //程序预设参数
             var PROJECTSTATES = 'start';//可能状态:'start','containue','pause','success'
@@ -109,7 +111,18 @@
             let endTime = new Date().getTime();
             let StartNode = null;//起点
             let DestinationNode = null;//终点
+            let Alignment = [];//路径
             let EasterEggCounter = 0;
+
+            let beginText = document.getElementById("beginText");
+            let dataText = document.getElementById("dataText");
+            let arrowsText = document.getElementById("arrowsText");
+            let renderText = document.getElementById("renderText");
+            const cnv = document.getElementById("Canvas");
+            const ctx = cnv.getContext("2d");
+
+            cnv.width = blockX*size;
+            cnv.height = blockY*size;
 
             //这段代码部分参考https://blog.csdn.net/weixin_41192489/article/details/124388436 以提高兼容性
             window.tools = {};
@@ -149,6 +162,7 @@
                         }
                         openList = [];
                         closeList = [];
+                        Alignment = [];
                         PROJECTSTATES = 'start';
                         beginText.innerHTML = "开始";
                     }
@@ -174,18 +188,17 @@
                         RenderStyle.arrows=1;
                         arrowsText.innerHTML='箭头:开';
                     }
+                }else if(style=='render'){
+                    if(RenderStyle.render){
+                        RenderStyle.render=0;
+                        renderText.innerHTML='搜索区域:关';
+                    }else{
+                        RenderStyle.render=1;
+                        renderText.innerHTML='搜索区域:开';
+                    }
                 }
             }
             
-            let beginText = document.getElementById("beginText");
-            let dataText = document.getElementById("dataText");
-            let arrowsText = document.getElementById("arrowsText");
-            const cnv = document.getElementById("Canvas");
-            const ctx = cnv.getContext("2d");
-
-            cnv.width = blockX*size;
-            cnv.height = blockY*size;
-
             function print(text){
                 console.log(text);
             }
@@ -208,20 +221,26 @@
                     }else if(openList.length==0&&PROJECTSTATES=='containue'&&StartNode!=null){
                         openList.push(StartNode);
                     }
+
+                    if(PROJECTSTATES == 'success'){
+                        this.createAlignment();
+                    }
                     print('Update OK!')
                 }
 
                 screenRender(){
-                    for(let i in openList){//渲染openList中节点
+                    if(RenderStyle.render){
+                        for(let i in openList){//渲染openList中节点
                         ctx.fillStyle = '#405090';
                         ctx.fillRect(openList[i].x*openList[i].size,openList[i].y*openList[i].size,openList[i].size,openList[i].size);
-                    }
+                        }
 
-                    for(let i in closeList){//渲染closeList中节点
-                        ctx.fillStyle = '#404040';
-                        ctx.fillRect(closeList[i].x*closeList[i].size,closeList[i].y*closeList[i].size,closeList[i].size,closeList[i].size);
+                        for(let i in closeList){//渲染closeList中节点
+                            ctx.fillStyle = '#404040';
+                            ctx.fillRect(closeList[i].x*closeList[i].size,closeList[i].y*closeList[i].size,closeList[i].size,closeList[i].size);
+                        }
                     }
-
+                    
                     for(let i=0;i<blockArr.length;i++){
                         for(let j=0;j<blockArr[i].length;j++){
                             blockArr[i][j].render();
@@ -229,23 +248,29 @@
                     }
 
                     if(PROJECTSTATES == 'success'){
-                        this.drawAlignment();
+                        this.drawAlignment(Alignment);
                     }                 
                 }
 
-                drawAlignment(){//画出从起点到终点的路径
+                createAlignment(){//创建从起点到终点的路径并存储在Alignment中
                     let thisNode = DestinationNode;
-                    ctx.strokeStyle = '#FF0000';
-                    ctx.lineWidth = 2;
-                    ctx.beginPath();
-                    ctx.moveTo((thisNode.x+0.5)*size,(thisNode.y+0.5)*size);
-                    while(thisNode.parentNode != null){
+                    while(thisNode != null){
+                        Alignment.push(thisNode);
                         if(thisNode.state=='wall'&&EasterEggCounter==0){
                             EasterEggCounter++;
                             alert('达成成就：狗急跳墙\r\r你逼得算法翻墙了！(@w@)\r\r呃，很高兴看到我写的程序能够被人喜欢，这让我觉得自己的劳动是有价值的，have fun!');
                         }
-                        ctx.lineTo((thisNode.parentNode.x+0.5)*size,(thisNode.parentNode.y+0.5)*size);
                         thisNode = thisNode.parentNode;
+                    }
+                }
+
+                drawAlignment(alignment){//画出从起点到终点的路径
+                    ctx.strokeStyle = '#FF0000';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    for(let i in alignment){
+                        let thisNode = alignment[i];
+                        ctx.lineTo((thisNode.x+0.5)*size,(thisNode.y+0.5)*size);                       
                     }
                     ctx.stroke();
                 }
@@ -282,7 +307,7 @@
                             break;
                         }
                         default:{
-                            addCost = 1.5;
+                            addCost = 1;
                             break;
                         }
                     }
@@ -381,7 +406,7 @@
                     }                  
                 }
 
-                clear(){
+                clear(){//重置时方块设置
                     this.parentNode = null;
                     this.G = null;
                     this.H = null;
@@ -444,6 +469,27 @@
                 }
             }
 
+            class Player{
+
+                constructor(x,y){
+                    this.x = x;
+                    this.y = y;
+                    this.towards = 'left';
+                    this.speed = 1;
+                    this.alignment = null;
+                }
+
+                update(){
+                    if(this.alignment != null){
+                    }
+                }
+
+                render(){
+                }
+            }
+
+            console.log('Sjkenterprise的计科导网页作业');
+
             var mouse = tools.getMouse(cnv);
             cnv.addEventListener('mousedown',()=>{
                 let x = Math.floor(mouse.x/size);
@@ -459,7 +505,6 @@
                     blockArr[i].push(new Block(i,j));
                 }
             }
-            console.log(blockArr);
 
             screen = new Screen();
 
