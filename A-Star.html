@@ -56,12 +56,119 @@
             .dropdown-content span:active {
                 background-color: #24B;
             }
+            .dropdown:active .showbox{
+                display: block;
+            }
+
+            input[type=text]{
+                width: 20px;
+                padding: 2px 2px;
+                margin: 6px 2px;
+            }
+            .showbox{
+                display: block;
+                margin-top: -200px;
+                margin-left: 300px;
+                margin-right: 300px;
+                padding: 10% 30%;
+                box-shadow: 0px 16px 32px 0px rgba(0,0,0,0.2);
+                background-color: #f9f9f9;
+                position: fixed;
+            }
+            .black_overlay {
+                display: none;
+                position: absolute;
+                top: 0%;
+                left: 0%;
+                width: 100%;
+                height: 100%;
+                background-color: #222;
+                z-index: 1001;
+                -moz-opacity: 0.8;
+                opacity: .80;
+                filter: alpha(opacity=78);
+            }
+
+            .pop_win {
+                display: none;
+                position: absolute;
+                top: 10%;
+                left: 20%;
+                width: 60%;
+                height: 75%;
+                padding: 10px;
+                border: 2px solid #3b3e41;
+                background-color: white;
+                z-index: 9999;
+                overflow: auto;
+                border-radius: 25px;
+            }
+            .fancybox-button {
+                background: rgba(30, 30, 30, .6);
+                border: 0;
+                border-radius: 0;
+                box-shadow: none;
+                cursor: pointer;
+                display: inline-block;
+                height: 44px;
+                margin: 0;
+                padding: 10px;
+                position: relative;
+                transition: color .2s;
+                vertical-align: top;
+                visibility: inherit;
+                width: 44px;
+            }
         </style>
+
+        <script type="text/javascript">
+            function popWin(show) {
+                document.getElementById('light').style.display = 'block';
+                document.getElementById('fade').style.display = 'block';
+
+                let showbox = document.getElementById('inlight');
+                switch(show){
+                    case 'direction':{
+                        showbox.innerHTML = "<h2># A*算法可视程序操作说明</h2><p>有一天，<span style='color:#0c0;'>小绿块</span>想要找<span style='color:#e00;'>小红块</span>去玩，但是它不知道怎么才能到达小红块的位置，快帮帮它找到去小红块那儿的路线吧！</p><p>......</p><p>好吧，上面的是我瞎编的，事实上，这是一个让A*寻路算法可视化的程序。</p><p>从<切换模式>中设置起点和想要到达的终点，然后点击开始，会自动生成一条从起点到终点的合适道路。</p><p>你可以从<切换模式>中选择各种不同的地形，它们的通过难度不同，比如墙会阻挡道路，而路会更容易通过。</p><h3># 算法原理</h3><p>A*(A-Star)算法是一种静态路网中求解最短路径最有效的直接搜索方法，也是解决许多搜索问题的有效算法。算法中的距离估算值与实际值越接近，最终搜索速度越快。</p><p>每个探索过的格子都会生成三个值G、H、F，其中G(绿色数字)负责衡量从起点到该格的代价，H(蓝色数字)负责衡量从该格到终点的距离，F(白色数字)=G+H，下一轮便探索F最小的格子周围的方格。</p><p>若想了解更多，请参考<a href='https://www.gamedev.net/reference/articles/article2003.asp'>A* Pathfinding for Beginners</a></p>";
+                        break;
+                    }
+                    case 'thanks':{
+                        showbox.innerHTML = "<h2># 特别感谢</h2><p>感谢计算机科学导论课的老师和助教的辛勤指导</p><p>感谢<a href='https://www.gamedev.net/reference/articles/article2003.asp'>https://www.gamedev.net/reference/articles/article2003.asp</a>给我了设计该程序的灵感</p><p>感谢<a href='https://www.runoob.com/css/css-tutorial.html'>https://www.runoob.com/css/css-tutorial.html</a>提供的CSS导航栏设计思路</p><h4>---除了以上所提的致谢外，本文件全部内容均由本人创作---</h4>";
+                        break;
+                    }
+                    case 'author':{
+                        showbox.innerHTML = "<h2># 网页作者</h2><p>向日葵</p><br><p>作者想说：</p><p style='color:grey;' onclick=popWin('author_more');><i>“作者没有什么想说的。”</i></p>"
+                        break;
+                    }
+                    case 'author_more':{
+                        showbox.innerHTML = "<h2># 网页作者</h2><p>向日葵</p><br><p>作者想说：</p><p onclick=popWin('author_moremore')>我真的没什么想说的啊(@w@)</p>";
+                        break;
+                    }
+                    case 'author_moremore':{
+                        showbox.innerHTML = "<h2># 网页作者</h2><p>向日葵</p><br><p>作者想说：</p><p onclick=popWin('author_moremoremore')>给你分享段我最近在听的京剧：<a href='https://www.bilibili.com/video/BV1Kq4y1q7fc'>舌战群儒</a></p><p>我就是听着这个写完程序的</p>";
+                        break;
+                    }
+                    case 'author_moremoremore':{
+                        showbox.innerHTML = "<h2># 网页作者</h2><p>向日葵</p><br><p>作者想说：</p><p onclick=popWin('author_moremoremore')>别点了，真没了: )</p><p>我很高兴我终于把这个程序给完工了</p>";
+                        break;
+                    }
+                    default:{
+                        showbox.innerHTML ="<p>这里没有任何东西哦:(</p>";
+                        break;
+                    }
+                }
+            }
+
+            function closeWin() {
+                document.getElementById('light').style.display = 'none';
+                document.getElementById('fade').style.display = 'none';
+            }
+        </script>
     </head>
     <body>
         <div>
             <ul>
-                <li><p>A*寻路</p></li>
+                <li><p style="color: #36D;"><strong>A*寻路算法</strong></p></li>
                 <hr>
                 <li><span id="beginText" onclick="clickBegin()">开始</span></li>
                 <li>
@@ -73,6 +180,19 @@
                             <span onclick="MouseMode='setDestination'">终点</span>
                             <span onclick="MouseMode='wall'">墙</span>
                             <span onclick="MouseMode='road'">路</span>
+                            <span onclick="MouseMode='forest'">森林</span>
+                            <span onclick="MouseMode='river'">河流</span>
+                        </div>
+                    </div>
+                </li>
+                <li>
+                    <div class="dropdown">
+                        <span>调整大小</span>
+                        <div class="dropdown-content">
+                            行数：<input id="BlockX" type="text" value="15" onchange="resizeBlock()"> 列数：<input id="BlockY" type="text" value="15" onchange="resizeBlock()"><br>
+                            <span>方格尺寸：</span>
+                            <input id="Size" type="range" min="5" max="100" value="30" onchange="resizeBlock()">
+                            
                         </div>
                     </div>
                 </li>
@@ -86,17 +206,34 @@
                         </div>
                     </div>
                 </li>
-                <li><span>说明</span></li>
+                <li>
+                    <div class="dropdown">
+                        <span onclick="popWin('direction');">说明</span>
+                    </div>
+                </li>
+                <li>
+                    <div class="dropdown">
+                        <span onclick="popWin('thanks');">鸣谢</span>
+                    </div>
+                </li>
+                <li>
+                    <div class="dropdown">
+                        <span onclick="popWin('author');">作者</span>
+                    </div>
+                </li>
             </ul>
         </div>
-        <div style="margin-left: 10%;padding: 1px 16px;height: 1000px;">
-            <canvas id="Canvas">您的浏览器不支持html5的canvas标签，请更换浏览器查看。:(</canvas>
+        <div id="light" class="pop_win">
+            <div id="inlight" style="margin: 20px;"></div>
+        </div>
+        <div id="fade" class="black_overlay"><a href="javascript:void(0)" onclick="closeWin();" style="float: right;"
+            class="fancybox-button fancybox-button--close"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path stroke="#ffffff" d="M12 10.6L6.6 5.2 5.2 6.6l5.4 5.4-5.4 5.4 1.4 1.4 5.4-5.4 5.4 5.4 1.4-1.4-5.4-5.4 5.4-5.4-1.4-1.4-5.4 5.4z"></path></svg></a></div>
+        <div style="margin-left: 200px;padding: 1px 16px;">
+            <canvas id="Canvas" style="margin-right: 20px;">您的浏览器不支持html5的canvas标签，请更换浏览器查看。:(</canvas>
         </div>
 
         <script>
             //自定义参数
-            var size = 30;//单个网格的大小(px)
-            var [blockX,blockY] = [20,20];//行列节点数
             var speed = 60;//播放速度
             var RenderStyle = {data:1,arrows:1,render:1};//可选项:'data','arrows'
 
@@ -118,13 +255,16 @@
             let dataText = document.getElementById("dataText");
             let arrowsText = document.getElementById("arrowsText");
             let renderText = document.getElementById("renderText");
+            let blockX = document.getElementById("BlockX");
+            let blockY = document.getElementById("BlockY");
+            let resize = document.getElementById("Size");
+            let size = resize.value;
             const cnv = document.getElementById("Canvas");
             const ctx = cnv.getContext("2d");
 
-            cnv.width = blockX*size;
-            cnv.height = blockY*size;
+            cnv.width = blockX.value*size;
+            cnv.height = blockY.value*size;
 
-            //这段代码部分参考https://blog.csdn.net/weixin_41192489/article/details/124388436 以提高兼容性
             window.tools = {};
             window.tools.getMouse = function(element){
                 var mouse={x:0,y:0};
@@ -155,8 +295,8 @@
                         PROJECTSTATES = 'pause';
                         beginText.innerHTML = "继续";
                     }else if(PROJECTSTATES=='success'){
-                        for(let i=0;i<blockX;i++){
-                            for(let j=0;j<blockY;j++){
+                        for(let i=0;i<blockArr.length;i++){
+                            for(let j=0;j<blockArr[i].length;j++){
                                 blockArr[i][j].clear();
                             }
                         }
@@ -198,11 +338,25 @@
                     }
                 }
             }
-            
-            function print(text){
-                console.log(text);
-            }
 
+            function resizeBlock(){
+                size = resize.value;
+                cnv.width = blockX.value*size;
+                cnv.height = blockY.value*size;
+
+                for(let i=0;i<blockX.value;i++){
+                    blockArr[i] = [];
+                    for(let j=0;j<blockY.value;j++){
+                        blockArr[i].push(new Block(i,j));
+                    }
+                }
+                openList = [];
+                closeList = [];
+                Alignment = [];
+                PROJECTSTATES = 'start';
+                beginText.innerHTML = "开始";
+            }
+            
             class Screen{
 
                 screenUpdate(){
@@ -225,19 +379,18 @@
                     if(PROJECTSTATES == 'success'){
                         this.createAlignment();
                     }
-                    print('Update OK!')
                 }
 
                 screenRender(){
                     if(RenderStyle.render){
                         for(let i in openList){//渲染openList中节点
                         ctx.fillStyle = '#405090';
-                        ctx.fillRect(openList[i].x*openList[i].size,openList[i].y*openList[i].size,openList[i].size,openList[i].size);
+                        ctx.fillRect(openList[i].x*size,openList[i].y*size,size,size);
                         }
 
                         for(let i in closeList){//渲染closeList中节点
                             ctx.fillStyle = '#404040';
-                            ctx.fillRect(closeList[i].x*closeList[i].size,closeList[i].y*closeList[i].size,closeList[i].size,closeList[i].size);
+                            ctx.fillRect(closeList[i].x*size,closeList[i].y*size,size,size);
                         }
                     }
                     
@@ -281,7 +434,6 @@
                 constructor(x,y){
                     this.x = x;
                     this.y = y;
-                    this.size = size;
                     this.state = 'default';//该网格的状态
                     this.parentNode = null;//该节点的父节点
                     this.G = null;
@@ -299,11 +451,19 @@
                     }
                     switch(this.state){//不同地形代价不同
                         case 'wall':{
-                            addCost = 100;
+                            addCost = 500;
                             break;
                         }
                         case 'road':{
                             addCost = 0.5;
+                            break;
+                        }
+                        case 'forest':{
+                            addCost = 10;
+                            break;
+                        }
+                        case 'river':{
+                            addCost = 50;
                             break;
                         }
                         default:{
@@ -330,7 +490,7 @@
                         i = surroundings[i];
                         for(let j in surroundings){
                             j = surroundings[j];
-                            if(i||j){//问题：判断链过长，不能分步扩散
+                            if(i||j){
                                 if((this.x+i in blockArr)&&(this.y+j in blockArr[this.x+i])){
                                     let thisNode = blockArr[this.x+i][this.y+j];
                                     if(thisNode.state == 'destination'){//找到终点
@@ -345,7 +505,6 @@
                                             thisNode.H=thisNode.ManhattanDist(DestinationNode);
                                             thisNode.F=thisNode.G+thisNode.H;
                                             newOpenList.push(thisNode);
-                                            //print(thisNode);
                                         }else{
                                             thisNode.parentNode = (thisNode.G<this.G+thisNode.cost(i,j))?thisNode.parentNode:this;
                                             thisNode.G=thisNode.parentNode.G+thisNode.cost(thisNode.parentNode.x-thisNode.x,thisNode.parentNode.y-thisNode.y);
@@ -400,6 +559,14 @@
                             this.state = 'road';
                             break;
                         }
+                        case 'forest':{
+                            this.state = 'forest';
+                            break;
+                        }
+                        case 'river':{
+                            this.state = 'river';
+                            break;
+                        }
                         default:{
                             break;
                         }
@@ -416,23 +583,33 @@
                 render(){
                     switch(this.state){//根据不同的网格状态选择不同的样式
                         case 'startPoint':{
-                            ctx.fillStyle = '#00FF00';
-                            ctx.fillRect(this.x*this.size,this.y*this.size,this.size,this.size);
+                            ctx.fillStyle = '#00EE00';
+                            ctx.fillRect(this.x*size,this.y*size,size,size);
                             break;
                         }
                         case 'destination':{
-                            ctx.fillStyle = '#FF0000';
-                            ctx.fillRect(this.x*this.size,this.y*this.size,this.size,this.size);
+                            ctx.fillStyle = '#EE0000';
+                            ctx.fillRect(this.x*size,this.y*size,size,size);
                             break;
                         }
                         case 'wall':{
                             ctx.fillStyle = '#000088';
-                            ctx.fillRect(this.x*this.size,this.y*this.size,this.size,this.size);
+                            ctx.fillRect(this.x*size,this.y*size,size,size);
                             break;
                         }
                         case 'road':{
-                            ctx.fillStyle = '#DDCC00';
-                            ctx.fillRect(this.x*this.size,this.y*this.size,this.size,this.size);
+                            ctx.fillStyle = '#EEDD00';
+                            ctx.fillRect(this.x*size,this.y*size,size,size);
+                            break;
+                        }
+                        case 'forest':{
+                            ctx.fillStyle = '#009900';
+                            ctx.fillRect(this.x*size,this.y*size,size,size);
+                            break;
+                        }
+                        case 'river':{
+                            ctx.fillStyle = '#66AAEE';
+                            ctx.fillRect(this.x*size,this.y*size,size,size);
                             break;
                         }
                         default:{
@@ -442,7 +619,7 @@
 
                     //绘制边框
                     ctx.strokeStyle = '#000000';
-                    ctx.strokeRect(this.x*this.size,this.y*this.size,this.size,this.size);
+                    ctx.strokeRect(this.x*size,this.y*size,size,size);
                     
                     //绘制箭头
                     if(RenderStyle.arrows&&(this.parentNode != null)){
@@ -450,8 +627,8 @@
                         let offSetX = rate*(this.x-this.parentNode.x);
                         let offSetY = rate*(this.y-this.parentNode.y);
                         ctx.beginPath();
-                        ctx.moveTo((this.x+0.5-offSetX)*this.size,(this.y+0.5-offSetY)*this.size);
-                        ctx.lineTo((this.x+0.5+offSetX)*this.size,(this.y+0.5+offSetY)*this.size);
+                        ctx.moveTo((this.x+0.5-offSetX)*size,(this.y+0.5-offSetY)*size);
+                        ctx.lineTo((this.x+0.5+offSetX)*size,(this.y+0.5+offSetY)*size);
                         ctx.stroke();
                     }
 
@@ -460,16 +637,16 @@
                         let fontSize = Math.floor(size/3);
                         ctx.font = fontSize+'px Arial';
                         ctx.fillStyle = '#00FF00';
-                        ctx.fillText(this.G,this.x*this.size,this.y*this.size+fontSize);
+                        ctx.fillText(this.G,this.x*size,this.y*size+fontSize);
                         ctx.fillStyle = '#00FFFF';
-                        ctx.fillText(this.H,(this.x+0.5)*this.size,this.y*this.size+fontSize);
+                        ctx.fillText(this.H,(this.x+0.5)*size,this.y*size+fontSize);
                         ctx.fillStyle = '#FFFFFF';
-                        ctx.fillText(this.F,this.x*this.size,(this.y+0.5)*this.size+fontSize);
+                        ctx.fillText(this.F,this.x*size,(this.y+0.5)*size+fontSize);
                     }
                 }
             }
 
-            console.log('Sjkenterprise的计科导网页作业');
+            console.log('Sjk的计科导网页作业');
 
             var mouse = tools.getMouse(cnv);
             cnv.addEventListener('mousedown',()=>{
@@ -478,11 +655,21 @@
                 if((x in blockArr)&&(y in blockArr[x])){
                     blockArr[x][y].onMouseClick();
                 }
+                cnv.onmousemove=()=>{
+                    x = Math.floor(mouse.x/size);
+                    y = Math.floor(mouse.y/size);
+                    if((x in blockArr)&&(y in blockArr[x])){
+                        blockArr[x][y].onMouseClick();
+                    }
+                }
+                window.addEventListener('mouseup',()=>{
+                    cnv.onmousemove = null;
+                })
             })
 
-            for(let i=0;i<blockX;i++){
+            for(let i=0;i<blockX.value;i++){
                 blockArr[i] = [];
-                for(let j=0;j<blockY;j++){
+                for(let j=0;j<blockY.value;j++){
                     blockArr[i].push(new Block(i,j));
                 }
             }
